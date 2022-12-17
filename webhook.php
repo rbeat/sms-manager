@@ -10,22 +10,24 @@
    ini_set('display_errors', 1);
    ini_set('display_startup_errors', 1);
    ini_set('log_errors', 'On');
-   ini_set('error_log', 'php_errors.log');
+   ini_set('error_log', 'logs/php_errors.log');
 
    $conf = include_once('config.php');
    $db = mysqli_connect($conf['DB_host'],$conf['DB_log'],$conf['DB_pass'],$conf['DB_name']) or die('Error accessing DB.');
+   $data = file_get_contents('php://input');
+   
    // DEBUG
-   // file_put_contents("logs/cache.log", $data);
+   file_put_contents("logs/cache.log", $data);
    if(isset($data))
    {
-      try{
-         $d = json_decode($data);
-         if($d->{'type'} === "sms"){
-            $sender   = mysqli_escape_string($db, $d->{'sender'});
-            $receiver = mysqli_escape_string($db, $d->{'receiver'});
-            $text     = mysqli_escape_string($db, $d->{'text'});
-            $date     = time();
-            $sql      = "INSERT INTO `msg` (`sender`, `receiver`, `date`, `text`) VALUES ($sender, $receiver, $date, '" . $text . "');";
+     try{
+       parse_str($data, $d);
+       if($d['SmsStatus'] === "received"){
+         $sender   = mysqli_escape_string($db, str_replace("+", "", $d['From']));
+         $receiver = mysqli_escape_string($db, str_replace("+", "", $d['To']));
+         $text     = mysqli_escape_string($db, $d['Body']);
+         $date     = time();
+         $sql      = "INSERT INTO `msg` (`sender`, `receiver`, `date`, `text`) VALUES ($sender, $receiver, $date, '" . $text . "');";
             $us       = mysqli_query($db, $sql);
             var_dump(json_encode($us));
             die();
